@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관광지 추천 - 결과</title>
+    <style>
+        /* 기본 스타일 */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        /* 상단 로고 영역 스타일 */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff5a5f;
+            text-decoration: none;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            width: 90%;
+            max-width: 1200px;
+            margin: 20px auto;
+        }
+        table {
+            width: 100%;
+            border-spacing: 20px;
+        }
+        .left-panel, .map-container, .info-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .left-panel {
+            font-size: 15px;
+            padding: 15px;
+            overflow-y: auto;
+            height: 363px;
+            width: 500px;
+        }
+        /* 지도 초기 배경 이미지 스타일 추가 */
+        .map-container {
+            height: 680px;
+            width: 100%;
+            overflow: hidden;
+            background-image: url('https://png.pngtree.com/png-clipart/20210610/ourlarge/pngtree-i-like-to-travel-png-image_3431196.jpg');
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+            display: none; /* 초기에는 숨김 */
+        }
+        .info-container {
+            width: 100%;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .spot {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .spot:hover {
+            background-color: #f0f0f0;
+        }
+        .review {
+            font-size: 20px;
+            font-weight: bold;
+            font-style: italic;
+            line-height: 1.5;
+            color: #444;
+            margin-bottom: 15px;
+        }
+        .description {
+            font-size: 16px;
+            font-style: italic;
+            color: #555; /* 중간 밝기 색상으로 조정 */
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding-left: 10px;
+            border-left: 2px solid #A9A9A9; /* 세련된 선 추가 */
+        }
+        .tags {
+            margin-top: 30px;
+        }
+        .tag {
+            display: inline-block;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            padding: 5px 10px;
+            margin: 5px 8px 5px 0; /* 태그 간 좌우 여백 조정 */
+            color: #555;
+        }
+    </style>
+    <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=0uxifb6sxl"></script>
+</head>
+<body>
+
+<!-- 상단 로고 영역 -->
+<div class="header">
+    <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
+</div>
+
+<div class="container">
+    <table>
+        <tr>
+            <td class="left-panel" id="results">
+                <h2>여기는 어떠신가요?</h2><br><br>
+                <!-- 관광지 목록이 여기에 표시됩니다 -->
+            </td>
+            <td class="map-container" id="map-container">
+                <div id="map"></div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <div class="info-container" id="infoContainer">
+                    <!-- 선택한 관광지 정보가 여기에 표시됩니다 -->
+                    <p class="review" id="reviewText">"리뷰가 여기에 표시됩니다."</p>
+                    <p class="description" id="descriptionText">장소에 대한 설명이 여기에 표시됩니다.</p>
+                    <div class="tags" id="tagsContainer">
+                        <!-- 태그들이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<script>
+    const touristSpots = [
+        {
+            name: "상동호수공원",
+            category: "산책 및 자연",
+            description: "호수 주변 산책로와 다양한 휴식 공간 제공",
+            url: "https://map.naver.com/v5/entry/place/13350571",
+            latitude: 37.50612394,
+            longitude: 126.7441626,
+            review: "호숫가에 있으면 시원하게 부는 바람이 늦더위도 식혀주고 물고기들도 반겨줘요.",
+            tags: ["공원", "호수", "산책", "놀이터", "운동", "아이", "식물원", "주차"]
+        },
+        {
+            name: "플레이아쿠아리움",
+            category: "동물 및 생태 체험",
+            description: "다양한 해양 생물과 수족관 관람 가능",
+            url: "https://map.naver.com/v5/entry/place/1820740985",
+            latitude: 37.49942786,
+            longitude: 126.7440795,
+            review: "처음 가봤는데 규모도 크고 볼게 많아요 두시간 꽉 채워서 보고 왔어요 티켓 금액도 저렴해서 좋네요!!",
+                tags: ["아이", "동물", "아쿠아리움", "물고기", "호랑이", "인어공주", "구경"]
+        },
+            {
+                name: "도당수목원",
+                category: "산책 및 자연",
+                description: "숲과 호수 주변을 산책하며 자연을 즐길 수 있는 공간",
+                url: "https://map.naver.com/v5/entry/place/21182976",
+                latitude: 37.51612856,
+                longitude: 126.7901821,
+                review: "도심에 이런 트래킹 코스와 아름다운 꽃들을 볼수있는곳에 가까이 사는것도 축복이다 밤에 운 좋으면 라이브 공연도 볼수있습니다.",
+                tags: ["장미", "공원", "산책", "축제", "백만송이", "사진", "걷기"]
+            },
+            {
+                name: "나눔농장",
+                category: "동물 및 생태 체험",
+                description: "아이와 함께 동물 체험과 먹이 주기 활동 가능",
+                url: "https://map.naver.com/v5/entry/place/263589995",
+                latitude: 37.54531323,
+                longitude: 126.7877276,
+                review: "동물들이 거의 아가들이라 아이들이 무서워하지 않고 잘 놀 수 있습니다. ^^",
+                tags: ["아이", "동물", "체험", "먹이", "염소", "토끼", "우유"]
+            },
+            {
+                name: "볼베어파크",
+                category: "어린이 및 가족 체험",
+                description: "실내 놀이 및 어드벤처 체험 공간",
+                url: "https://map.naver.com/v5/entry/place/1654560840",
+                latitude: 37.49942786,
+                longitude: 126.7440795,
+                review: "어릴적 추억이 떠오르는 보물찾기 이벤트도 있어 보물 찾느라 여기저기 구석구석 같이 찾으며 아이들에게 재밌는 경험까지 보태주고 온거같네요.",
+                tags: ["아이", "규모", "카페", "파크", "키즈", "썰매", "좋은 시설"]
+            },
+            {
+                name: "부천로보파크",
+                category: "어린이 및 가족 체험",
+                description: "로봇을 주제로 한 교육 전시 및 체험 시설",
+                url: "https://map.naver.com/v5/entry/place/37811875",
+                latitude: 37.51761005,
+                longitude: 126.7640511,
+                review: "초3 아이둘 관람&체험 즐거운 시간 보내고 왔습니다^^평일 첫타임은 기관견학이 많은데 그래도 여유롭게 잘 체험하고 왔어요~",
+                tags: ["아이", "체험", "로봇", "관람", "전시", "투어"]
+            },
+            {
+                name: "부천 무릉도원 수목원",
+                category: "산책 및 자연",
+                description: "다양한 식물 전시와 산책로를 갖춘 자연 체험 공간",
+                url: "https://map.naver.com/v5/entry/place/36091519",
+                latitude: 37.50322729,
+                longitude: 126.8184177,
+                review: "걷기 좋은 규모이고 크게 붐비지 않아 힐링하기 좋았습니다.",
+                tags: ["산책", "체험", "식물원", "가을", "산책로", "수목원", "걷기", "공원", "튤립"]
+            },
+            {
+                name: "부천백만송이공원",
+                category: "산책 및 자연",
+                description: "백만 송이 장미와 아름다운 경관을 자랑하는 공원",
+                url: "https://map.naver.com/v5/entry/place/13350571",
+                latitude: 37.50612394,
+                longitude: 126.7441626,
+                review: "부천시에서 준비한 장미꽃 축제가 아주 아름답고 즐거웠습니다. 이쁜 장미들의 종류와 그 종자를 개발된 나라들을 알게되어 학습에도 도움이 되어 아이들의 정서발달에 도음이 되겠습니다.",
+                tags: ["장미", "공원", "주차", "축제", "사진", "구경", "산책", "백만송이"]
+            },
+            {
+                name: "부천시립박물관",
+                category: "전통 및 역사 탐방",
+                description: "다양한 전통과 역사적 유물을 전시하는 박물관",
+                url: "https://map.naver.com/v5/entry/place/11620669",
+                latitude: 37.5090733,
+                longitude: 126.7456343,
+                review: "엄청 큰 전시관은 아니지만 꼼꼼하게 정리된 컨텐츠들이 전시되어있어 보는 맛이있습니다.",
+                tags: ["박물관", "아이", "옹기", "전시", "체험", "관람", "교육"]
+            },
+            {
+                name: "부천아트벙커",
+                category: "문화 및 예술 체험",
+                description: "독특한 예술 전시와 카페가 있는 공간",
+                url: "https://map.naver.com/v5/entry/place/1340333088",
+                latitude: 37.52189975,
+                longitude: 126.7676609,
+                review: "쓰레기 소각장을 인간의 상상력을 최고치로 끌어 올리는 예술 공간으로 바꾸어 놓은 최고의 도시재생 공간, 세상 어디에도 없을 그 공간에서 펼쳐지는 무한한 상상력의 예술가들이 펼치는 멀티미디어 전시, 멋스럽게 열린 편안한 1층 공간에서 맛볼 수 있는 음식과 커피, 넉넉한 주차공간.평평한 일상에 입체감을 입혀주는 멋진 시간을 만날 수 있는 곳!!",
+                tags: ["전시", "카페", "음식", "분위기", "문화", "예술", "작품", "파스타"]
+            },
+            {
+                name: "부천아트센터",
+                category: "문화 및 예술 체험",
+                description: "다양한 공연을 즐길 수 있는 아트센터",
+                url: "https://map.naver.com/v5/entry/place/11620669",
+                latitude: 37.5090733,
+                longitude: 126.7456343,
+                review: "구석에 앉아도 수도권 그 어느 공연장보다 훨씬 잘 들립니다. 갈때마다 음향 반사판이 참 인상깊습니다.",
+                tags: ["공연", "음향", "관람", "아트", "연주", "카페", "주차"]
+            },
+            {
+                name: "부천자연생태공원",
+                category: "동물 및 생태 체험",
+                description: "생태 체험과 산책을 즐길 수 있는 자연 공원",
+                url: "https://map.naver.com/v5/entry/place/11890704",
+                latitude: 37.50512276,
+                longitude: 126.8157628,
+                review: "생태공원과 '전시관, 수목원이 함께 어우러져 훌륭한 경관을 이뤘습니다'",
+                tags: ["정원", "산책", "아이", "식물원", "튤립", "생태공원", "구경", "박물관", "나들이"]
+            },
+            {
+                name: "부천천문과학관",
+                category: "과학 및 교육",
+                description: "천문 관측과 다양한 과학 체험이 가능한 과학관",
+                url: "https://map.naver.com/v5/entry/place/38407960",
+                latitude: 37.51063818,
+                longitude: 126.7898131,
+                review: "두번째인데 아이가 지루해하지않을까했지만 첫번째 다르고 두번째 다르고 더 흥미있어해서 다행이였어요!",
+                tags: ["아이", "관측", "태양", "별자리", "체험", "과학관"]
+            },
+            {
+                name: "레노부르크뮤지엄",
+                category: "문화 및 예술 체험",
+                description: "미디어아트 전시와 카페가 있는 공간",
+                url: "https://map.naver.com/v5/entry/place/1524504273",
+                latitude: 37.53121603,
+                longitude: 126.7684559,
+                review: "아이들이랑 같이왔는데 공간 하나하나 신기해하고 즐길거리가 많네요 공휴일에 왔는데도 붐비지 않고 쾌적합니다.",
+                tags: ["아이", "카페", "사진", "브런치", "전시", "관람", "미디어아트"]
+            },
+            {
+                name: "한국만화박물관",
+                category: "과학 및 교육",
+                description: "만화 역사와 추억을 담은 전시와 체험 공간",
+                url: "https://map.naver.com/v5/entry/place/20667818",
+                latitude: 37.50783456,
+                longitude: 126.7631753,
+                review: "어린아이들은 물론 미래 진로결정에 도움이 될만한 세미나를 현직 작가분들이 진행도 하셔서 너무 좋은 시간들었네요.",
+                tags: ["아이", "만화", "체험", "전시", "박물관", "추억", "도서관"]
+            },
+            {
+                name: "원미산 진달래공원",
+                category: "산책 및 자연",
+                description: "진달래와 벚꽃이 피는 계절에 방문하기 좋은 산책 공원",
+                url: "https://map.naver.com/v5/entry/place/21182976",
+                latitude: 37.487651,
+                longitude: 126.782391,
+                review: "진달래 흐드러지게 활짝 만개를 하였고 내일까지 아름답게 진달래 동산을 수놓을것 같습니다.",
+                tags: ["진달래", "벚꽃", "축제", "구경", "운동장", "사진", "산책"]
+            },
+            {
+                name: "고강선사유적공원",
+                category: "전통 및 역사 탐방",
+                description: "선사 시대 유적을 볼 수 있는 역사적인 공원",
+                url: "https://map.naver.com/v5/entry/place/21182976",
+                latitude: 37.507892,
+                longitude: 126.788345,
+                review: "나무가 많고 데크길도 있어서 가을에 가면 가을의흥취를 흠뻑 느낄수 있을꺼라 생각됩니다. 저녁에는 조명도 켜져서 아주아름다워요.",
+                tags: ["공원", "산책", "선사", "철쭉", "유적", "도서관", "운동", "아이"]
+            },
+            {
+                name: "부천한옥체험마을",
+                category: "전통 및 역사 탐방",
+                description: "전통 한옥 생활 체험과 문화 프로그램을 제공하는 마을",
+                url: "https://map.naver.com/v5/entry/place/21868522",
+                latitude: 37.5090733,
+                longitude: 126.7456343,
+                review: "잘 관리되어있는 한옥을 수도권에서 조용히 보고 산책할수있어요.",
+                tags: ["전통", "마을", "숙박", "만화", "박물관", "사진"]
+            },
+    ];
+
+    let map, marker;
+
+    function initMap() {
+        map = new naver.maps.Map('map', {
+            center: new naver.maps.LatLng(37.48602779587463, 126.80229973150944),
+            zoom: 15
+        });
+
+        marker = new naver.maps.Marker({
+            map: map,
+            icon: {
+                url: "https://i.imgur.com/YOUR_IMAGE_ID.png",
+                size: new naver.maps.Size(24, 37),
+                anchor: new naver.maps.Point(12, 37)
+            }
+        });
+    }
+
+    function displayResults() {
+        const resultsContainer = document.getElementById('results');
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedCategory = urlParams.get('category');
+
+        const filteredSpots = touristSpots.filter(spot => spot.category === selectedCategory);
+
+        filteredSpots.forEach(spot => {
+            const spotElement = document.createElement('div');
+            spotElement.className = 'spot';
+            spotElement.innerHTML = `<h3>${spot.name}</h3><p>${spot.description}</p>`;
+            spotElement.onclick = () => displayInfo(spot);
+            resultsContainer.appendChild(spotElement);
+        });
+    }
+
+    function displayInfo(spot) {
+        document.getElementById('reviewText').innerText = `"${spot.review}"`;
+        document.getElementById('descriptionText').innerText = spot.description;
+    
+        const tagsContainer = document.getElementById('tagsContainer');
+        tagsContainer.innerHTML = ''; // 기존 태그 초기화
+
+        // 파스텔 톤 색상 배열 생성
+        const pastelColors = ["#8EB695", "#FFA07A", "#E9967A", "#9C9BCD", "#D8AABF", "#8EC0E4", "#F4B183"];
+    
+        // 태그마다 파스텔 색상을 순환하여 폰트 색상에 적용
+        spot.tags.forEach((tag, index) => {
+            const tagElement = document.createElement('span');
+            tagElement.className = 'tag';
+            tagElement.innerText = `#${tag}`;
+        
+            // 파스텔 톤을 순환하여 폰트 색상에 적용
+            tagElement.style.color = pastelColors[index % pastelColors.length];
+        
+            tagsContainer.appendChild(tagElement);
+        });
+
+        showSpotOnMap(spot.latitude, spot.longitude);
+    }
+
+
+
+    function showSpotOnMap(latitude, longitude) {
+        const mapElement = document.getElementById('map');
+        mapElement.style.display = "block"; // 지도를 표시
+        document.getElementById('map-container').style.backgroundImage = "none"; // 초기 이미지 제거
+
+        const position = new naver.maps.LatLng(latitude, longitude);
+    
+        // 초기 줌 레벨 설정
+        map.setZoom(15); // 원하는 초기 줌 레벨로 설정 (예: 15)
+
+        // 부드럽게 해당 위치로 이동
+        map.panTo(position, { duration: 1000 }); // duration 값으로 애니메이션 속도 설정 (1000ms = 1초)
+
+        marker.setPosition(position); // 마커 위치 업데이트
+
+        // 지도의 크기를 재조정하여 중앙 위치가 보이도록 함
+        setTimeout(() => {
+            naver.maps.Event.trigger(map, 'resize');
+            map.panTo(position); // 부드러운 이동 후에도 중앙 위치 맞춤
+        }, 100); // 지도 로딩 후 resize 이벤트를 약간 지연시켜 호출
+    }
+
+
+
+    window.onload = () => {
+        initMap();
+        displayResults();
+    };
+</script>
+
+</body>
+</html>

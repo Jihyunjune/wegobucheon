@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관광지 추천 - 카테고리 선택</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            padding: 10px 20px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff5a5f;
+            text-decoration: none;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .category-item {
+            padding: 15px;
+            cursor: pointer;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .category-item:hover {
+            background-color: #f0f0f0;
+        }
+        .category-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
+</div>
+
+<div class="container">
+    <h2 style="text-align: center; color: #ff5a5f; font-weight: bold;">지금 떠오르는 여행지는..?</h2>
+    <div class="category-item" onclick="goToResults('산책 및 자연')">⛰️ 산책 및 자연</div>
+    <div class="category-item" onclick="goToResults('동물 및 생태 체험')">🐬 동물 및 생태 체험</div>
+    <div class="category-item" onclick="goToResults('어린이 및 가족 체험')">👶🏻 어린이 및 가족 체험</div>
+    <div class="category-item" onclick="goToResults('문화 및 예술 체험')">🎨 문화 및 예술 체험</div>
+    <div class="category-item" onclick="goToResults('전통 및 역사 탐방')">🛖 전통 및 역사 탐방</div>
+    <div class="category-item" onclick="goToResults('과학 및 교육')">🚀 과학 및 교육</div>
+</div>
+
+<script>
+    function goToResults(category) {
+        window.location.href = `/results?category=${encodeURIComponent(category)}`;
+    }
+</script>
+
+</body>
+</html>
