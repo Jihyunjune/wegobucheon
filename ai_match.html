@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 관광지 매칭</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .category-item {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #recommendations-content {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI 기반 부천 관광지 추천</h1>
+    <div class="container">
+        <h2>관심 있는 카테고리를 선택해주세요</h2>
+        <div id="categoryContainer"></div>
+        
+        <button onclick="getRecommendations()">추천받기</button>
+        <button onclick="resetSelections()">초기화</button>
+
+        <div id="recommendations-content">
+            <h2>추천된 관광지</h2>
+            <!-- 추천 결과가 여기에 표시됩니다 -->
+        </div>
+    </div>
+
+    <script>
+        // 카테고리 목록 예시
+        const categories = ["가을", "걷기", "공연", "공원", "과학관", "관람", "관측", "교육", "구경", "규모", "나들이", "놀이터", "도서관", "동물", "로봇", "마을", "만화", "먹이", "문화", "물고기"];
+
+        // 선택된 카테고리를 저장하는 배열
+        let selectedCategories = [];
+
+        // 카테고리 버튼 생성
+        const categoryContainer = document.getElementById("categoryContainer");
+        categories.forEach(category => {
+            const button = document.createElement("div");
+            button.className = "category-item";
+            button.innerText = category;
+            button.onclick = () => toggleCategory(category, button);
+            categoryContainer.appendChild(button);
+        });
+
+        // 카테고리 선택 토글 함수
+        function toggleCategory(category, button) {
+            if (button.classList.contains('selected')) {
+                button.classList.remove('selected');
+                selectedCategories = selectedCategories.filter(c => c !== category);
+            } else {
+                button.classList.add('selected');
+                selectedCategories.push(category);
+            }
+        }
+
+        // 추천 결과 요청
+        function getRecommendations() {
+            const formData = new FormData();
+            selectedCategories.forEach(category => formData.append('interests', category));
+
+            fetch('http://localhost:8080/recommend', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const recDiv = document.getElementById('recommendations-content');
+                recDiv.innerHTML = '<h2>추천 관광지</h2>';
+                data.forEach((rec, index) => {
+                    recDiv.innerHTML += `
+                        <p><strong>${index + 1}. ${rec.name}</strong> (${rec.category}) - 평점: ${rec.rating}<br>
+                        특징: ${rec.features.join(', ')}<br>
+                        위치: 위도 ${rec.location[0]}, 경도 ${rec.location[1]}<br>
+                        대표 리뷰: ${rec.reviews.join(', ')}</p>`;
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById('recommendations-content').innerText = "추천 결과를 불러올 수 없습니다.";
+            });
+        }
+
+        // 선택 초기화 및 추천 결과 지우기
+        function resetSelections() {
+            selectedCategories = [];  // 선택된 카테고리 초기화
+            document.querySelectorAll('.category-item').forEach(button => button.classList.remove('selected'));
+            document.getElementById('recommendations-content').innerHTML = '';  // 추천 결과 초기화
+        }
+    </script>
+</body>
+</html>
