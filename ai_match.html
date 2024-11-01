@@ -62,7 +62,7 @@
     <div class="header">
         <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
     </div>
-    
+
     <h1>AI 기반 부천 관광지 추천</h1>
     <div class="container">
         <h2>관심 있는 카테고리를 선택해주세요</h2>
@@ -110,7 +110,8 @@
             const formData = new FormData();
             selectedCategories.forEach(category => formData.append('interests', category));
 
-            fetch('http://localhost:8080/recommend', {
+            // 로컬 호스트 주소 및 포트를 현재 설정에 맞게 조정
+            fetch('http://127.0.0.1:5000/recommend', {  // Flask 기본 포트가 5000일 경우
                 method: 'POST',
                 body: formData
             })
@@ -131,6 +132,7 @@
                 document.getElementById('recommendations-content').innerText = "추천 결과를 불러올 수 없습니다.";
             });
         }
+
 
         // 선택 초기화 및 추천 결과 지우기
         function resetSelections() {
