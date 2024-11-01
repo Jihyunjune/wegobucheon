@@ -12,6 +12,24 @@
             margin: 0;
             background-color: #f0f0f0;
         }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: bold;
+            color: #ff5a5f;
+            text-decoration: none;
+        }
         .container {
             width: 90%;
             max-width: 600px;
@@ -41,6 +59,10 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
+    </div>
+    
     <h1>AI 기반 부천 관광지 추천</h1>
     <div class="container">
         <h2>관심 있는 카테고리를 선택해주세요</h2>
