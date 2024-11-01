@@ -12,40 +12,79 @@
             align-items: center;
             margin: 0;
             background-color: #f0f0f0;
+            overflow: hidden;
+            position: relative;
         }
+        
+        /* 슬라이드 배경 */
+        .background-slider {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-size: cover;
+            background-position: center;
+            transition: opacity 3s ease;
+            z-index: -1;
+        }
+
         .header {
             display: flex;
             align-items: center;
             justify-content: flex-start;
             width: 100%;
             padding: 10px 20px;
-            background-color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.8);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
         }
+
         .logo {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: bold;
             color: #ff5a5f;
             text-decoration: none;
         }
+
         .container {
-            width: 100%;
+            width: 90%;
             max-width: 600px;
             margin-top: 20px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
+
+        .container h2 {
+            background-color: #ff5a5f;
+            color: #ffffff;
+            padding: 15px;
+            font-size: 22px;
+            text-align: center;
+            margin: 0;
+        }
+
         .category-item {
             padding: 15px;
             cursor: pointer;
             text-align: center;
+            font-size: 18px;
+            color: #333;
+            background-color: #f8f8f8;
             border-bottom: 1px solid #eee;
+            transition: background-color 0.3s, color 0.3s;
         }
+
         .category-item:hover {
-            background-color: #f0f0f0;
+            background-color: #ff5a5f;
+            color: #ffffff;
         }
+
         .category-item:last-child {
             border-bottom: none;
         }
@@ -53,12 +92,15 @@
 </head>
 <body>
 
+<div class="background-slider" id="backgroundSlider"></div>
+
 <div class="header">
     <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
 </div>
-
 <div class="container">
-    <h2 style="text-align: center; color: #ff5a5f; font-weight: bold;">지금 떠오르는 여행지는..?</h2>
+    <h2>지금 떠오르는 여행지는..?</h2>
+
+    <div class="category-item" onclick="location.href='/ai_match'">🧠 AI 매치</div>
     <div class="category-item" onclick="goToResults('산책 및 자연')">⛰️ 산책 및 자연</div>
     <div class="category-item" onclick="goToResults('동물 및 생태 체험')">🐬 동물 및 생태 체험</div>
     <div class="category-item" onclick="goToResults('어린이 및 가족 체험')">👶🏻 어린이 및 가족 체험</div>
@@ -69,8 +111,29 @@
 
 <script>
     function goToResults(category) {
-        window.location.href = `/result.html?category=${encodeURIComponent(category)}`;
+        window.location.href = `/result?category=${encodeURIComponent(category)}`;
     }
+
+    const images = [
+        'https://images.unsplash.com/photo-1670211317924-d74f69606be5',
+        'https://images.unsplash.com/photo-1619179792234-e187df76f9e2',
+        'https://images.unsplash.com/photo-1638964761353-9ef5a4b793e1',
+    ];
+    let currentIndex = 0;
+    const backgroundSlider = document.getElementById('backgroundSlider');
+
+    function changeBackground() {
+        backgroundSlider.style.opacity = 0; // 페이드 아웃
+
+        setTimeout(() => {
+            backgroundSlider.style.backgroundImage = `url(${images[currentIndex]})`;
+            backgroundSlider.style.opacity = 1; // 페이드 인
+            currentIndex = (currentIndex + 1) % images.length;
+        }, 3000); // 페이드 아웃 시간과 일치하도록 지연
+    }
+
+    setInterval(changeBackground, 10000); 
+    changeBackground(); // 초기 이미지 설정
 </script>
 
 </body>
