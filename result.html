@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관광지 추천 - 결과</title>
     <style>
+        @font-face {
+            font-family: 'RixInooAriDuriR';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2207-01@1.0/RixInooAriDuriR.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'HSSaemaul-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/HSSaemaul-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'TheJamsil5Bold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/TheJamsil5Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
         /* 기본 스타일 */
         body {
             font-family: Arial, sans-serif;
@@ -14,6 +33,21 @@
             margin: 0;
             background-color: #f0f0f0;
         }
+        
+        배경 슬라이더
+        #backgroundSlider {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            transition: opacity 1s ease-in-out;
+            z-index: -1; /* 뒤에 위치 */
+            opacity: 1;
+        }
+
         /* 상단 로고 영역 스타일 */
         .header {
             display: flex;
@@ -21,25 +55,32 @@
             justify-content: flex-start;
             width: 100%;
             padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 1);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             position: relative;
             z-index: 1;
         }
         .logo {
             font-size: 26px;
-            font-weight: bold;
+            font-family: 'RixInooAriDuriR';
             color: #ff5a5f;
             text-decoration: none;
         }
+
+        /* 메인 컨테이너 */
         .container {
             display: flex;
             justify-content: center;
             width: 90%;
             max-width: 1200px;
             margin: 20px auto;
+            position: relative;
+            z-index: 2; /* 배경 위로 표시 */
         }
+        
+        /* 테이블 스타일 */
         table {
+            font-family: 'TheJamsil5Bold';
             width: 100%;
             border-spacing: 20px;
         }
@@ -55,6 +96,7 @@
             height: 363px;
             width: 500px;
         }
+
         /* 지도 초기 배경 이미지 스타일 추가 */
         .map-container {
             height: 680px;
@@ -96,11 +138,11 @@
         .description {
             font-size: 16px;
             font-style: italic;
-            color: #555; /* 중간 밝기 색상으로 조정 */
+            color: #555;
             line-height: 1.6;
             margin-bottom: 15px;
             padding-left: 10px;
-            border-left: 2px solid #A9A9A9; /* 세련된 선 추가 */
+            border-left: 2px solid #A9A9A9;
         }
         .tags {
             margin-top: 30px;
@@ -110,13 +152,16 @@
             background-color: #f0f0f0;
             border-radius: 5px;
             padding: 5px 10px;
-            margin: 5px 8px 5px 0; /* 태그 간 좌우 여백 조정 */
+            margin: 5px 8px 5px 0;
             color: #555;
         }
     </style>
     <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=0uxifb6sxl"></script>
 </head>
 <body>
+
+<!-- 배경 슬라이더 -->
+<div id="backgroundSlider"></div>
 
 <!-- 상단 로고 영역 -->
 <div class="header">
@@ -148,7 +193,6 @@
         </tr>
     </table>
 </div>
-
 <script>
     const touristSpots = [
         {
@@ -368,29 +412,28 @@
     }
 
     function displayInfo(spot) {
-        document.getElementById('reviewText').innerText = `"${spot.review}"`;
-        document.getElementById('descriptionText').innerText = spot.description;
-    
-        const tagsContainer = document.getElementById('tagsContainer');
-        tagsContainer.innerHTML = ''; // 기존 태그 초기화
+        console.log("Displaying info for:", spot); // 디버깅용
+        document.getElementById('reviewText').innerText = spot.review ? `"${spot.review}"` : "리뷰가 없습니다.";
+        document.getElementById('descriptionText').innerText = spot.description ? spot.description : "설명이 없습니다.";
 
-        // 파스텔 톤 색상 배열 생성
+        const tagsContainer = document.getElementById('tagsContainer');
+        tagsContainer.innerHTML = '';
+
         const pastelColors = ["#8EB695", "#FFA07A", "#E9967A", "#9C9BCD", "#D8AABF", "#8EC0E4", "#F4B183"];
-    
-        // 태그마다 파스텔 색상을 순환하여 폰트 색상에 적용
         spot.tags.forEach((tag, index) => {
             const tagElement = document.createElement('span');
             tagElement.className = 'tag';
             tagElement.innerText = `#${tag}`;
-        
-            // 파스텔 톤을 순환하여 폰트 색상에 적용
             tagElement.style.color = pastelColors[index % pastelColors.length];
-        
             tagsContainer.appendChild(tagElement);
         });
 
+        // 지도 및 정보 표시 후 스크롤 이동
         showSpotOnMap(spot.latitude, spot.longitude);
+        document.getElementById('infoContainer').scrollIntoView({ behavior: 'smooth' });
     }
+
+
 
 
 
@@ -426,3 +469,4 @@
 
 </body>
 </html>
+
