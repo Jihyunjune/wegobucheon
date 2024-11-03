@@ -14,6 +14,7 @@ import urllib
 from urllib.request import Request, urlopen
 import folium
 import json
+from flask_cors import CORS
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
