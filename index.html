@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>관광지 추천 - 카테고리 선택</title>
     <style>
+        @font-face {
+        font-family: 'RixInooAriDuriR';
+        src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2207-01@1.0/RixInooAriDuriR.woff2') format('woff2');
+        font-weight: normal;
+        font-style: normal;
+        }
+        @font-face {
+        font-family: 'HSSaemaul-Regular';
+        src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/HSSaemaul-Regular.woff') format('woff');
+        font-weight: normal;
+        font-style: normal;
+        }
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -15,6 +27,7 @@
             overflow: hidden;
             position: relative;
         }
+        
         
         /* 슬라이드 배경 */
         .background-slider {
@@ -43,7 +56,7 @@
 
         .logo {
             font-size: 26px;
-            font-weight: bold;
+            font-family: RixInooAriDuriR;
             color: #ff5a5f;
             text-decoration: none;
         }
@@ -54,6 +67,8 @@
             margin-top: 20px;
             background-color: #ffffff;
             border-radius: 12px;
+            font-family: 'HSSaemaul-Regular';
+            font-size: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             position: relative;
@@ -62,9 +77,10 @@
 
         .container h2 {
             background-color: #ff5a5f;
+            
             color: #ffffff;
             padding: 15px;
-            font-size: 22px;
+            font-size: 30px;
             text-align: center;
             margin: 0;
         }
@@ -73,7 +89,8 @@
             padding: 15px;
             cursor: pointer;
             text-align: center;
-            font-size: 18px;
+            font-family: 'HSSaemaul-Regular';
+            font-size: 20px;
             color: #333;
             background-color: #f8f8f8;
             border-bottom: 1px solid #eee;
@@ -103,10 +120,10 @@
     <div class="category-item" onclick="location.href='/ai_match'">🧠 AI 매치</div>
 
     <div class="category-item" onclick="goToResults('산책 및 자연')">⛰️ 산책 & 자연</div>
-    <div class="category-item" onclick="goToResults('동물 및 생태 체험')">🐬 동물 & 생태</div>
-    <div class="category-item" onclick="goToResults('어린이 및 가족 체험')">👶🏻 어린이 & 가족</div>
+    <div class="category-item" onclick="goToResults('동물 및 생태 체험')">🐬 동물 & 생태 </div>
+    <div class="category-item" onclick="goToResults('어린이 및 가족 체험')">👶🏻 어린이 & 가족 </div>
     <div class="category-item" onclick="goToResults('문화 및 예술 체험')">🎨 문화 & 예술</div>
-    <div class="category-item" onclick="goToResults('전통 및 역사 탐방')">🛖 전통 & 역사</div>
+    <div class="category-item" onclick="goToResults('전통 및 역사 탐방')">🛖 전통 & 역사 </div>
     <div class="category-item" onclick="goToResults('과학 및 교육')">🚀 과학 & 교육</div>
 </div>
 
@@ -116,9 +133,28 @@
     }
 
     const images = [
-        'https://images.unsplash.com/photo-1670211317924-d74f69606be5',
-        'https://images.unsplash.com/photo-1619179792234-e187df76f9e2',
-        'https://images.unsplash.com/photo-1638964761353-9ef5a4b793e1',
+        "{{ url_for('static', filename='image/고강선사유적공원.jpg') }}",
+        "{{ url_for('static', filename='image/나눔농장.JPG') }}",
+        "{{ url_for('static', filename='image/도당수목원.jpg') }}",
+        "{{ url_for('static', filename='image/레노부르크뮤지엄.jpeg') }}",
+        "{{ url_for('static', filename='image/레노부르크뮤지엄.jpg') }}",
+        "{{ url_for('static', filename='image/백만송이장미원.jpg') }}",
+        "{{ url_for('static', filename='image/볼베어파크.jpeg') }}",
+        "{{ url_for('static', filename='image/부천로보파크.jpg') }}",
+        "{{ url_for('static', filename='image/부천무릉도원수목원.jpg') }}",
+        "{{ url_for('static', filename='image/부천시립박물관.jpg') }}",
+        "{{ url_for('static', filename='image/부천아트벙커.jpg') }}",
+        "{{ url_for('static', filename='image/부천아트센터.png') }}",
+        "{{ url_for('static', filename='image/부천아트센터2.jpg') }}",
+        "{{ url_for('static', filename='image/부천자연생태공원.jpg') }}",
+        "{{ url_for('static', filename='image/부천천문과학관.jpg') }}",
+        "{{ url_for('static', filename='image/부천한옥체험마을.JPG') }}",
+        "{{ url_for('static', filename='image/부천천문과학관2.jpg') }}",
+        "{{ url_for('static', filename='image/상동호수공원.jpg') }}",
+        "{{ url_for('static', filename='image/원미산 진달래동산.jpg') }}",
+        "{{ url_for('static', filename='image/플레이아쿠아리움부천.png') }}",
+        "{{ url_for('static', filename='image/한국만화박물관.JPG') }}",
+        "{{ url_for('static', filename='image/한국만화박물관2.jpg') }}"
     ];
     let currentIndex = 0;
     const backgroundSlider = document.getElementById('backgroundSlider');
