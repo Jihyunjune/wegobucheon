@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>지도 경로 설정</title>
+    <style>
+         @font-face {
+            font-family: 'RixInooAriDuriR';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2207-01@1.0/RixInooAriDuriR.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'HSSaemaul-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/HSSaemaul-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'TheJamsil5Bold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/TheJamsil5Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        /* General styling */
+        body {
+            font-family: 'HSSaemaul-Regular', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        /* Header styling */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            padding: 15px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            font-family: 'RixInooAriDuriR';
+            font-size: 26px;
+            color: #ff5a5f;
+            z-index: 1;
+        }
+        .logo {
+            text-decoration: none;
+            color: #ff5a5f;
+        }
+
+        /* Form container styling */
+        .container {
+            width: 80%;
+            max-width: 800px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container h3 {
+            font-family: 'TheJamsil5Bold';
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .container hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin: 20px 0;
+        }
+
+        /* Form elements */
+        .address-inputs, .tourist-buttons {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .address-inputs label {
+            font-family: 'TheJamsil5Bold';
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        .address-inputs input, .waypoint-input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        .add-waypoint-button, .recommend-button, .reset-button {
+            font-family: 'TheJamsil5Bold';
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .add-waypoint-button {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .add-waypoint-button:hover {
+            background-color: #0056b3;
+        }
+
+        .recommend-button {
+            background-color: #ff5a5f;
+            color: white;
+        }
+
+        .reset-button {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .reset-button:hover {
+            background-color: #ccc;
+        }
+
+        /* Tourist button styling */
+        .tourist-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .tourist-buttons button {
+            width: 30%;
+            padding: 8px;
+            font-size: 14px;
+            font-family: 'HSSaemaul-Regular';
+            background-color: #f8f8f8;
+            color: #555;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tourist-buttons button:hover {
+            background-color: #ffb3b5;
+            color: #fff;
+        }
+
+        .disabled-button {
+            background-color: #ddd;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* Section title styling */
+        .section-title {
+            font-family: 'TheJamsil5Bold';
+            font-size: 18px;
+            color: #333;
+            margin-top: 20px;;
+        }
+        .address-label {
+            font-size: 14px;
+            margin-right: 5px;
+            white-space: nowrap;  /* 텍스트가 줄 바꿈되지 않도록 설정 */
+        }
+        .address-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;  /* 가로 공간을 꽉 채움 */
+        }
+        .waypoint-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
+    </div>
+    <div class="container">
+        <h3>출발지, 경유지, 도착지 주소를 입력하세요</h3>
+        <h3>출발지, 도착지는 <span style="color: red;">필수 지정사항</span>이며 경유지는 <span style="color: red;">선택사항</span>입니다</h3>
+        <h3>경유지는 최대 <span style="color: red;">5개</span>까지 선택 가능합니다</h3>
+        <hr>
+        <form id="routeForm" action="/ai_map/show_route" method="post" target="mapFrame">
+            <div class="address-inputs">
+                <div class="address-inputs">
+                    <div class="address-container">
+                        <label class="address-label">출발지:</label>
+                        <input type="text" id="start" name="start" placeholder="출발지 입력">
+                    </div>
+                
+                    <div id="waypoints-container" style="margin-top: 10px;"></div>
+                
+                    <button type="button" class="add-waypoint-button" onclick="addWaypoint()">경유지 추가</button>
+                
+                    <div class="address-container" style="margin-top: 10px;">
+                        <label class="address-label">도착지:</label>
+                        <input type="text" id="goal" name="goal" placeholder="도착지 입력">
+                    </div>
+                </div>
+            </div>
+            <div class="tourist-buttons">
+                <div class="section-title">추천된 관광지</div>
+                <div id="other-spots"></div>
+            </div>
+            <button class="recommend-button" type="submit">경로 보기</button>
+            <button class="reset-button" type="button" onclick="resetFields()">입력 초기화</button>
+        </form>
+        <iframe name="mapFrame" width="100%" height="500px" frameborder="0"></iframe>
+    </div>
+    <script>
+        let waypointCount = 0;
+
+        document.addEventListener("DOMContentLoaded", () => {
+        // Flask에서 전달된 selected_spots 데이터를 JSON 형식으로 안전하게 가져옵니다
+            const selectedSpots = JSON.parse('{{ selected_spots|tojson|safe }}'); 
+
+        // 전체 관광지 목록
+            const allSpots = [
+                { name: '상동호수공원', address: '경기 부천시 원미구 길주로 16' },
+                { name: '도당수목원', address: '경기 부천시 원미구 부천로354번길 100' },
+                { name: '부천무릉도원수목원', address: '경기 부천시 원미구 춘의동 387-3' },
+                { name: '백만송이장미원', address: '경기 부천시 원미구 성곡로63번길 99 도당공원' },
+                { name: '원미산 진달래동산', address: '경기 부천시 원미구 상동 526-2' },
+                { name: '플레이아쿠아리움', address: '경기 부천시 원미구 조마루로 2' },
+                { name: '나눔농장', address: '경기 부천시 오정구 대장로118번길 41 나눔농장' },
+                { name: '부천자연생태공원', address: '경기 부천시 원미구 길주로 660' },
+                { name: '볼베어파크', address: '경기 부천시 원미구 조마루로 2 웅진플레이도시 2층 볼베어파크' },
+                { name: '부천로보파크', address: '경기 부천시 원미구 평천로 655' },
+                { name: '부천아트벙커B39', address: '경기 부천시 오정구 삼작로 53' },
+                { name: '부천아트센터', address: '경기 부천시 원미구 소향로 165 부천아트센터' },
+                { name: '레노부르크뮤지엄', address: '경기 부천시 오정구 신흥로511번길 180' },
+                { name: '부천시립박물관', address: '경기 부천시 오정구 소사로 638' },
+                { name: '고강선사유적공원', address: '경기 부천시 오정구 고리울로8번길 77' },
+                { name: '부천한옥체험마을', address: '경기 부천시 원미구 길주로 1' },
+                { name: '부천천문과학관', address: '경기 부천시 원미구 부천로264번길 117 부천천문과학관' },
+                { name: '한국만화박물관', address: '경기 부천시 원미구 길주로 1' }
+            ];
+
+            const recommendedContainer = document.getElementById('recommended-spots');
+            const otherContainer = document.getElementById('other-spots');
+
+            // Display recommended spots with red color
+            const filteredSpots = allSpots.filter(spot => selectedSpots.includes(spot.name));
+
+            filteredSpots.forEach(spot => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'recommended-button'; // Red background for recommended spots
+                button.innerText = spot.name;
+                button.onclick = () => setNextAddress(spot.address, button);
+                recommendedContainer.appendChild(button);
+            });
+
+            // Display other spots in normal color
+            const otherSpots = allSpots.filter(spot => !selectedSpots.includes(spot.name));
+            otherSpots.forEach(spot => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.innerText = spot.name;
+                button.onclick = () => setNextAddress(spot.address, button);
+                otherContainer.appendChild(button);
+            });
+        });
+
+        function addWaypoint() {
+            if (waypointCount >= 5) {
+                alert("경유지는 최대 5개까지 추가할 수 있습니다.");
+                return;
+            }
+
+            const container = document.getElementById('waypoints-container');
+            const waypointContainer = document.createElement('div');
+            waypointContainer.classList.add('waypoint-container');
+
+            const label = document.createElement('label');
+            label.classList.add('address-label');
+            label.innerText = `경유지 ${waypointCount + 1}:`;
+
+            const input = document.createElement('input');
+            input.type = "text";
+            input.name = "waypoint";
+            input.classList.add("waypoint-input");
+            input.placeholder = "경유지 입력";
+
+            const removeButton = document.createElement('button');
+            removeButton.innerText = "X";
+            removeButton.classList.add("remove-waypoint-button");
+            removeButton.onclick = function() {
+            container.removeChild(waypointContainer);
+            waypointCount--;
+            updateWaypointLabels();
+        };
+
+            waypointContainer.appendChild(label);
+            waypointContainer.appendChild(input);
+            waypointContainer.appendChild(removeButton);
+            container.appendChild(waypointContainer);
+
+            waypointCount++;
+        }
+
+        function updateWaypointLabels() {
+            const labels = document.querySelectorAll('.waypoint-label');
+            labels.forEach((label, index) => {
+                label.innerText = `경유지 ${index + 1}:`;
+            });
+        }
+
+        function setNextAddress(address, button) {
+            const start = document.getElementById('start');
+            const goal = document.getElementById('goal');
+            const waypoints = Array.from(document.getElementsByName('waypoint'));
+
+            if (!start.value) {
+                start.value = address;
+            } else if (waypoints.some(input => !input.value)) {
+                const emptyWaypoint = waypoints.find(input => !input.value);
+                emptyWaypoint.value = address;
+            } else if (!goal.value) {
+                goal.value = address;
+            } else if (waypointCount < 5) {
+                addWaypoint();
+                const newWaypoint = document.getElementsByName('waypoint')[waypointCount - 1];
+                newWaypoint.value = address;
+            } else {
+                alert("경유지와 도착지 모두 선택된 상태입니다.");
+            }
+
+            button.classList.add('disabled-button');
+            button.disabled = true;
+        }
+
+        function resetFields() {
+            document.getElementById('start').value = '';
+            document.getElementById('goal').value = '';
+            document.getElementsByName('waypoint').forEach(input => input.value = '');
+            waypointCount = 0;
+            document.getElementById('waypoints-container').innerHTML = '';
+
+            document.querySelectorAll('.disabled-button').forEach(button => {
+                button.classList.remove('disabled-button');
+                button.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
