@@ -366,6 +366,5 @@ def show_route():
     # route_map.html 템플릿을 렌더링하여 반환
     return render_template('route_map.html')
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
