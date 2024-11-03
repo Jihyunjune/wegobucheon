@@ -1,20 +1,27 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, jsonify, render_template, render_template_string
 import numpy as np
-import tensorflow as tf
+import pandas as pd
 from typing import List, Dict
 from dataclasses import dataclass
-from flask_cors import CORS
+import logging
+from pathlib import Path
+from sklearn.feature_extraction.text import TfidfVectorizer
+from konlpy.tag import Okt
+import sqlite3
+import ast
+from collections import Counter
+import urllib
+from urllib.request import Request, urlopen
+import folium
+import json
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 app = Flask(__name__)
-#CORS(app, resources={r"/*": {"origins": "*"}})  # 모든 출처에 대해 CORS 허용
-CORS(app, resources={r"/*": {"origins": "https://wegobucheon.netlify.app"}})
 
-tourist_spots = [
-    {"name": "부천식물원", "category": "산책 및 자연", "description": "다양한 식물 전시와 자연 체험이 가능한 정원", "latitude": 37.50512276, "longitude": 126.8157628, "url": "https://www.bucheon.go.kr/site/homepage/menu/viewMenu?menuid=148006001004010"},
-    {"name": "플레이아쿠아리움", "category": "동물 및 생태 체험", "description": "다양한 해양 생물과 수족관 관람 가능", "latitude": 37.49942786, "longitude": 126.7440795, "url": "https://map.naver.com/v5/entry/place/1820740985"},
-    {"name": "볼베어파크", "category": "어린이 및 가족 체험", "description": "실내 놀이 및 어드벤처 체험 공간", "latitude": 37.49942786, "longitude": 126.7440795, "url": "https://map.naver.com/v5/entry/place/1654560840"},
-    # 더 많은 관광지 추가...
-] 
+# 네이버 API 키 설정
+client_id = '0uxifb6sxl'
+client_secret = 'h9VLdh7W1xOzIwf2RtUxXMH9X8b0Y779kytjgNaq'
 
 @dataclass
 class TourSpot:
@@ -23,272 +30,271 @@ class TourSpot:
     rating: float
     reviews: List[str]
     location: tuple  # (latitude, longitude)
-    features: List[str]  # 관광지의 특징들
+    features: List[str]
+    address: str = ''
 
-    def calculate_sentiment_score(self):
-        positive_words = ['좋', '최고', '추천', '훌륭', '만족']
-        return len([r for r in self.reviews if any(word in r for word in positive_words)]) / len(
-            self.reviews) if self.reviews else 0
+    def calculate_sentiment_score(self, analyzer):
+        """KoNLPy 기반 감성 점수 계산"""
+        if not self.reviews:
+            return 0.0
 
-class GLocalKernelLayer(tf.keras.layers.Layer):
-    def __init__(self, n_hidden, n_dim=5, **kwargs):
-        super(GLocalKernelLayer, self).__init__(**kwargs)
-        self.n_hidden = n_hidden
-        self.n_dim = n_dim
+        if analyzer:
+            sentiment_analysis = analyzer.process_reviews(self.reviews)
+            return sentiment_analysis['sentiment_score']
+        return 0.5
 
-    def build(self, input_shape):
-        self.W = self.add_weight(
-            name='W',
-            shape=[input_shape[-1], self.n_hidden],
-            initializer='glorot_uniform',
-            trainable=True
-        )
-        self.u = self.add_weight(
-            name='u',
-            shape=[input_shape[-1], 1, self.n_dim],
-            initializer='truncated_normal',
-            trainable=True
-        )
-        self.v = self.add_weight(
-            name='v',
-            shape=[1, self.n_hidden, self.n_dim],
-            initializer='truncated_normal',
-            trainable=True
-        )
-        self.b = self.add_weight(
-            name='b',
-            shape=[self.n_hidden],
-            initializer='zeros',
-            trainable=True
-        )
-        super(GLocalKernelLayer, self).build(input_shape)
-
-    def call(self, x):
-        # Local kernel computation
-        dist = tf.norm(self.u - self.v, ord=2, axis=2)
-        w_hat = tf.maximum(0., 1. - dist ** 2)
-
-        # Effective weight matrix
-        W_eff = self.W * w_hat
-        return tf.nn.sigmoid(tf.matmul(x, W_eff) + self.b)
-
-class GLocalTourismRecommender:
-    def __init__(self, n_hidden=500, n_dim=5, n_layers=2):
-        self.n_hidden = n_hidden
-        self.n_dim = n_dim
-        self.n_layers = n_layers
-
-        # 부천시 관광지 데이터 초기화
-        self.spots = {
-            "상동호수공원": TourSpot(
-                "상동호수공원",
-                "산책/자연",
-                4.5,
-                ["로봇과 체험이 너무 재미있어요", "아이들이 좋아해요", "교육적이에요"],
-                (37.5044, 126.7642),
-                ["공원","호수","산책","놀이터","운동","아이","식물원","주차"]
-            ),
-            "도당수목원": TourSpot(
-                "도당수목원",
-                "산책/자연",
-                4.3,
-                ["전시가 멋져요", "카페도 좋아요", "사진찍기 좋아요"],
-                (37.4855, 126.7824),
-                ["장미","공원","산책","축제","백만송이","사진","걷기"]
-            ),
-            "무릉도원수목원": TourSpot(
-                "무릉도원수목원",
-                "산책/자연",
-                4.2,
-                ["산책하기 좋아요", "조용하고 평화로워요", "주차가 편해요"],
-                (37.5123, 126.7890),
-                ["산책","체험","식물원","가을","산책로","수목원","걷기","공원","튤립"]
-            ),
-            "백만송이장미원": TourSpot(
-                "백만송이장미원",
-                "산책/자연",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ["장미","공원","주차","축제","사진","구경","산책","백만송이"]
-            ),
-            "원미산진달래공원": TourSpot(
-                "원미산진달래공원",
-                "산책/자연",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['진달래','벚꽃','축제','구경','운동장','사진','산책']
-            ),
-            "플레이아쿠아리움": TourSpot(
-                "플레이아쿠아리움",
-                "동물/생태체험",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','동물','아쿠아리움','물고기','호랑이','인어공주','구경']
-            ),
-            "나눔공장": TourSpot(
-                "나눔공장",
-                "동물/생태체험",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','동물','체험','먹이','염소','토끼','우유']
-            ),
-            "부천자연생태공원": TourSpot(
-                "부천자연생태공원",
-                "동물/생태체험",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['정원','산책','아이','식물원','튤립','생태공원','구경','박물관','나들이']
-            ),
-            "볼베어파크": TourSpot(
-                "플레이아쿠아리움",
-                "어린이/가족",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','규모','카페','파크','키즈','썰매','좋은시설']
-            ),
-            "부천로보파크": TourSpot(
-                "부천로보파크",
-                "어린이/가족",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','체험','로봇','관람','전시','투어']
-            ),
-            "부천아트벙커": TourSpot(
-                "부천아트벙커",
-                "문화/예술",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['전시','카페','음식','분위기','문화','예술','작품','파스타']
-            ),
-            "부천아트센터": TourSpot(
-                "부천아트센터",
-                "문화/예술",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['공연','음향','관람','아트','연주','카페','주차']
-            ),
-            "레노부르크뮤지엄": TourSpot(
-                "레노부르크뮤지엄",
-                "문화/예술",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','카페','사진','브런치','전시','관람','미디어아트']
-            ),
-            "부천시립박물관": TourSpot(
-                "부천시립박물관",
-                "전통/역사",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['박물관','아이','옹기','전시','체험','관람','교육']
-            ),
-            "고강선사유적공원": TourSpot(
-                "고강선사유적공원",
-                "전통/역사",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['공원','산책','선사','철쭉','유적','도서관','운동','아이']
-            ),
-            "부천한옥체험마을": TourSpot(
-                "부천한옥체험마을",
-                "전통/역사",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['전통','마을','숙박','만화','박물관','사진']
-            ),
-            "부천천문과학관": TourSpot(
-                "부천천문과학관",
-                "과학/교육",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','관측','태양','별자리','체험','과학관']
-            ),
-            "한국만화박물관": TourSpot(
-                "한국만화박물관",
-                "과학/교육",
-                4.0,
-                ["시설이 좋아요", "운동하기 좋아요", "깨끗해요"],
-                (37.5033, 126.7756),
-                ['아이','만화','체험','전시','박물관','추억','도서관']
-            )
+class KoNLPySentimentAnalyzer:
+    def __init__(self):
+        self.okt = Okt()
+        self.sentiment_words = {
+            'positive': [
+                '좋다', '최고', '훌륭하다', '추천', '만족', '친절하다', '깨끗하다',
+                '재미있다', '즐겁다', '멋지다', '편리하다', '괜찮다', '예쁘다',
+                '편하다', '신나다', '흥미롭다', '특별하다', '인상적', '감동',
+                '맛있다', '즐기다', '행복하다', '안전하다', '매력적'
+            ],
+            'negative': [
+                '별로', '실망', '불만', '나쁘다', '후회', '불친절하다', '더럽다',
+                '비싸다', '좁다', '복잡하다', '불편하다', '아쉽다', '부족하다',
+                '지루하다', '심심하다', '재미없다', '위험하다', '불안하다',
+                '시끄럽다', '힘들다', '불쾌하다', '싫다', '답답하다'
+            ]
         }
-        self._build_rating_matrix()
-        self._initialize_model()
 
-    def _build_rating_matrix(self):
-        """사용자-관광지 평점 행렬 생성"""
-        self.n_spots = len(self.spots)
-        self.n_users = 100  # 예시 사용자 수
-        self.rating_matrix = np.zeros((self.n_spots, self.n_users), dtype=np.float32)
+    def analyze_review(self, text: str) -> Dict:
+        morphs = self.okt.pos(text, norm=True, stem=True)
+        positive_score = 0
+        negative_score = 0
+        nouns = []
 
-    def _initialize_model(self):
-        """Keras 모델 초기화"""
-        inputs = tf.keras.Input(shape=(self.n_users,))
-        x = inputs
+        for word, tag in morphs:
+            weight = 1.2 if tag in ['Adjective', 'Verb'] else 1.0
+            if word in self.sentiment_words['positive']:
+                positive_score += weight
+            elif word in self.sentiment_words['negative']:
+                negative_score += weight
 
-        # GLocal 레이어 추가
-        for i in range(self.n_layers):
-            x = GLocalKernelLayer(self.n_hidden, name=f'glocal_layer_{i}')(x)
+            if word in ['않다', '안', '못', '없다']:
+                positive_score, negative_score = negative_score, positive_score
 
-        # 최종 출력 레이어
-        outputs = GLocalKernelLayer(self.n_users, name='output_layer')(x)
+            if tag in ['Noun', 'NNG', 'NNP']:
+                nouns.append(word)
 
-        self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
-        self.model.compile(
-            optimizer='adam',
-            loss='mse',
-            metrics=['mae']
+        total_score = positive_score + negative_score
+        sentiment_score = positive_score / total_score if total_score > 0 else 0.5
+
+        return {
+            'sentiment_score': sentiment_score,
+            'nouns': nouns,
+            'positive_score': positive_score,
+            'negative_score': negative_score
+        }
+
+    def process_reviews(self, reviews: List[str]) -> Dict:
+        review_analyses = [self.analyze_review(review) for review in reviews]
+        avg_sentiment = np.mean([analysis['sentiment_score'] for analysis in review_analyses])
+        all_nouns = [word for analysis in review_analyses for word in analysis['nouns']]
+        top_keywords = [word for word, _ in Counter(all_nouns).most_common(10)]
+
+        sentiment_distribution = {
+            'positive': len([a for a in review_analyses if a['sentiment_score'] > 0.6]),
+            'negative': len([a for a in review_analyses if a['sentiment_score'] < 0.4]),
+            'neutral': len([a for a in review_analyses if 0.4 <= a['sentiment_score'] <= 0.6])
+        }
+
+        return {
+            'sentiment_score': avg_sentiment,
+            'keywords': top_keywords,
+            'analysis': sentiment_distribution
+        }
+
+class TourismRecommender:
+    def __init__(self, db_path: str = 'tourism.db'):
+        self.setup_logging()
+        self.spots = {}
+        self.db_path = db_path
+        self.sentiment_analyzer = KoNLPySentimentAnalyzer()
+
+        # TF-IDF 벡터라이저 초기화
+        self.vectorizer = TfidfVectorizer(
+            max_features=1000,
+            min_df=2,
+            max_df=0.95,
+            token_pattern=r'[가-힣]+|[a-zA-Z]+'
         )
 
-    def calculate_spot_score(self, spot: TourSpot, user_interests: List[str]) -> float:
-        interest_score = 1.0
-        if any(interest in spot.features for interest in user_interests):
-            interest_score = 1.5
-        sentiment_score = spot.calculate_sentiment_score()
-        final_score = (spot.rating * 0.4) + (sentiment_score * 0.3) + (interest_score * 0.3)
-        return final_score
+        # 데이터베이스 초기화 및 CSV 로드
+        self._initialize_database()
+        self.load_spots_from_csv('tourism_spots.csv')
+    def _initialize_database(self):
+        """데이터베이스 테이블 초기화"""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS spots (
+                    id INTEGER PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    category TEXT NOT NULL,
+                    rating FLOAT,
+                    location_lat FLOAT,
+                    location_lon FLOAT,
+                    features TEXT,
+                    created_at TIMESTAMP
+                )
+            """)
+
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS reviews (
+                    id INTEGER PRIMARY KEY,
+                    spot_id INTEGER,
+                    content TEXT,
+                    sentiment_score FLOAT,
+                    created_at TIMESTAMP,
+                    FOREIGN KEY (spot_id) REFERENCES spots (id)
+                )
+            """)   
+    def setup_logging(self):
+        self.logger = logging.getLogger('TourismRecommender')
+        self.logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
+        self.logger.addHandler(handler)
+
+    def load_spots_from_csv(self, csv_path: str):
+        try:
+            if not Path(csv_path).exists():
+                self.logger.error(f"CSV 파일을 찾을 수 없습니다: {csv_path}")
+                return False
+
+            df = pd.read_csv(csv_path, encoding="utf-8")
+
+            for _, row in df.iterrows():
+                try:
+                    reviews = ast.literal_eval(row['reviews'])
+                    features = ast.literal_eval(row['features'])
+                    location = ast.literal_eval(row['location'])
+                    address = row['address']
+                except:
+                    self.logger.error(f"데이터 파싱 오류 발생: {row['name']}")
+                    continue
+
+                spot = TourSpot(
+                    name=row['name'],
+                    category=row['category'],
+                    rating=float(row['rating']),
+                    reviews=reviews,
+                    location=location,
+                    features=features,
+                    address=address
+                )
+
+                self.spots[row['name']] = spot
+
+            print(f"총 {len(self.spots)}개의 관광지 데이터를 로드했습니다.")
+            return True
+
+        except Exception as e:
+            self.logger.error(f"데이터 로드 중 오류 발생: {str(e)}")
+            return False
 
     def recommend_spots(self, user_interests: List[str], num_recommendations: int = 3) -> List[Dict]:
-        """사용자 맞춤 관광지 추천"""
         spot_scores = []
         for spot_name, spot in self.spots.items():
-            score = self.calculate_spot_score(spot, user_interests)
+            base_score = self.calculate_spot_score(spot, user_interests)
+            review_analysis = self.sentiment_analyzer.process_reviews(spot.reviews)
+            final_score = (base_score * 0.6) + (review_analysis['sentiment_score'] * 0.4)
             spot_scores.append({
-                'name': spot.name,
+                'name': spot_name,
                 'category': spot.category,
                 'rating': spot.rating,
-                'score': score,
-                'reviews': spot.reviews[:2],
+                'features': spot.features,
+                'address': spot.address,
                 'location': spot.location,
-                'features': spot.features
+                'final_score': final_score
             })
-
-        # 모델 예측을 통한 점수 보정
-        predictions = self.model.predict(self.rating_matrix, verbose=0)
-
-        # 예측 점수를 반영하여 최종 점수 조정
-        for i, spot_score in enumerate(spot_scores):
-            model_score = float(np.mean(predictions[i]))  # float 변환 추가
-            spot_score['score'] = spot_score['score'] * 0.7 + model_score * 0.3
-
-        spot_scores.sort(key=lambda x: x['score'], reverse=True)
+        spot_scores.sort(key=lambda x: x['final_score'], reverse=True)
         return spot_scores[:num_recommendations]
 
-# 추천기 인스턴스 생성
-recommender = GLocalTourismRecommender()
+    def calculate_spot_score(self, spot: TourSpot, user_interests: List[str]) -> float:
+        interest_score = 1.5 if any(interest in spot.features for interest in user_interests) else 1.0
+        return (spot.rating + interest_score) / 2
+
+# 네이버 지도 API를 사용해 주소를 좌표로 변환하는 함수
+def get_location(loc):
+    url = f"https://naveropenapi.apigw.ntruss.com/map-geocode/v2/geocode?query=" + urllib.parse.quote(loc)
+    request = Request(url)
+    request.add_header('X-NCP-APIGW-API-KEY-ID', client_id)
+    request.add_header('X-NCP-APIGW-API-KEY', client_secret)
+    response = urlopen(request)
+    if response.getcode() == 200:
+        response_body = json.loads(response.read().decode('utf-8'))
+        if response_body['meta']['totalCount'] == 1:
+            lat = response_body['addresses'][0]['y']
+            lon = response_body['addresses'][0]['x']
+            return (lon, lat)
+    return None
+
+# 인도(도보) 경로를 얻는 함수
+def get_optimal_route(start, goal, waypoints=None, option=''):
+    waypoints_str = '|'.join([f"{wp[0]},{wp[1]}" for wp in waypoints]) if waypoints else ''
+    url = f'https://naveropenapi.apigw.ntruss.com/map-direction/v1/driving?start={start[0]},{start[1]}&goal={goal[0]},{goal[1]}&waypoints={waypoints_str}&option={option}'
+    request = Request(url)
+    request.add_header('X-NCP-APIGW-API-KEY-ID', client_id)
+    request.add_header('X-NCP-APIGW-API-KEY', client_secret)
+    response = urlopen(request)
+    if response.getcode() == 200:
+        return json.loads(response.read().decode('utf-8'))
+    return None
+
+
+# 경로를 시각화하고 자동 확대 조정하는 함수
+def visualize_route(route_data):
+    start = (route_data['route']['traoptimal'][0]['summary']['start']['location'][1],
+             route_data['route']['traoptimal'][0]['summary']['start']['location'][0])
+    goal = (route_data['route']['traoptimal'][0]['summary']['goal']['location'][1],
+            route_data['route']['traoptimal'][0]['summary']['goal']['location'][0])
+
+    route_map = folium.Map(location=start, zoom_start=14)
+    path_coordinates = [(point[1], point[0]) for point in route_data['route']['traoptimal'][0]['path']]
+    route_map.fit_bounds([[min(lat for lat, lon in path_coordinates), min(lon for lat, lon in path_coordinates)],
+                          [max(lat for lat, lon in path_coordinates), max(lon for lat, lon in path_coordinates)]])
+
+    # 출발지 마커
+    folium.Marker(
+        start,
+        popup='출발지',
+        icon=folium.Icon(color='green', icon='home', prefix='fa')
+    ).add_to(route_map)
+
+        # 경유지 마커 추가 (원형 숫자 마커)
+    waypoints = route_data['route']['traoptimal'][0]['summary'].get('waypoints', [])
+    for i, waypoint in enumerate(waypoints):
+        location = (waypoint['location'][1], waypoint['location'][0])
+        folium.Marker(
+            location,
+            popup=f'경유지 {i + 1}',
+            icon=folium.DivIcon(
+                icon_size=(30, 30),
+                icon_anchor=(15, 15),
+                html=f'<div style="font-size: 12px; color: white; background-color: orange; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">{i + 1}</div>'
+            )
+        ).add_to(route_map)
+
+    # 도착지 마커
+    folium.Marker(
+        goal,
+        popup='도착지',
+        icon=folium.Icon(color='red', icon='flag', prefix='fa')
+    ).add_to(route_map)
+
+    # 경로 라인 추가
+    folium.PolyLine(path_coordinates, color="blue", weight=5, opacity=0.7).add_to(route_map)
+
+    return route_map
+
+recommender = TourismRecommender()
+
 
 @app.route('/')
 def index():
@@ -297,21 +303,68 @@ def index():
 @app.route('/result')
 def result():
     category = request.args.get('category')
-    filtered_spots = [spot for spot in tourist_spots if spot['category'] == category]
+    filtered_spots = [
+        {
+            'name': spot.name,
+            'category': spot.category,
+            'description': spot.reviews[0] if spot.reviews else "",
+            'latitude': spot.location[0],
+            'longitude': spot.location[1]
+        } 
+        for spot in recommender.spots.values() if spot.category == category
+    ]
     return render_template('result.html', category=category, spots=filtered_spots)
 
 @app.route('/ai_match')
 def ai_match():
     return render_template('ai_match.html')
 
+@app.route('/ai_map', methods=['GET', 'POST'])
+def ai_map():
+    if request.method == 'POST':
+        selected_spots = request.json.get("selectedSpots", [])
+        return render_template('ai_map.html', selected_spots=selected_spots)
+    else:
+        return render_template('ai_map.html', selected_spots=[])
+
 @app.route('/recommend', methods=['POST'])
 def recommend():
-    user_interests = request.form.getlist('interests')
+    user_interests = request.json.get('interests', [])
     recommendations = recommender.recommend_spots(user_interests)
     return jsonify(recommendations)
 
-# if __name__ == '__main__':
-#     app.run(debug=True)
+@app.route('/ai_map', methods=['GET', 'POST'], endpoint='ai_map_page')
+def ai_map():
+    if request.method == 'POST':
+        selected_spots = request.json.get("selectedSpots", [])
+        return render_template('ai_map.html', selected_spots=selected_spots)
+    else:
+        return render_template('ai_map.html', selected_spots=[])
+
+@app.route('/ai_map/show_route', methods=['POST'], endpoint='show_route_on_ai_map')
+@app.route('/show_route', methods=['POST'])
+def show_route():
+    start_address = request.form['start']
+    goal_address = request.form['goal']
+    waypoint_addresses = request.form.getlist('waypoint')
+
+    start = get_location(start_address)
+    goal = get_location(goal_address)
+    waypoints = [get_location(addr) for addr in waypoint_addresses if addr]
+
+    if not start or not goal:
+        return "출발지 또는 도착지 좌표를 찾을 수 없습니다."
+
+    route_data = get_optimal_route(start, goal, waypoints=waypoints)
+    if not route_data:
+        return "경로를 찾을 수 없습니다."
+
+    route_map = visualize_route(route_data)
+    route_map.save('templates/route_map.html')  # 'route_map.html' 파일을 templates 폴더에 저장
+
+    # route_map.html 템플릿을 렌더링하여 반환
+    return render_template('route_map.html')
+
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
