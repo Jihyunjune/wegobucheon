@@ -2,8 +2,26 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>AI 관광지 매칭</title>
+    <title>AI 기반 부천 관광지 추천</title>
     <style>
+        @font-face {
+            font-family: 'RixInooAriDuriR';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2207-01@1.0/RixInooAriDuriR.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'HSSaemaul-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2108@1.1/HSSaemaul-Regular.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'TheJamsil5Bold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_2302_01@1.0/TheJamsil5Bold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
         body {
             font-family: Arial, sans-serif;
             display: flex;
@@ -18,128 +36,339 @@
             justify-content: flex-start;
             width: 100%;
             padding: 10px 20px;
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 1);
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             position: relative;
             z-index: 1;
         }
 
         .logo {
+            font-family: 'RixInooAriDuriR';
             font-size: 26px;
-            font-weight: bold;
             color: #ff5a5f;
             text-decoration: none;
         }
         .container {
-            width: 90%;
+            
+            width: 80%;
             max-width: 600px;
-            margin-top: 20px;
-            background-color: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
             padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
-        .category-item {
-            padding: 10px;
-            margin: 5px;
-            border: 1px solid #ccc;
-            background-color: #f0f0f0;
-            cursor: pointer;
+
+        .container h1 {
+            font-family: 'TheJamsil5Bold';
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .keyword-button {
+            font-family: 'HSSaemaul-Regular';
+            padding: 10px 15px;
+            font-size: 20px;
+            border: none;
             border-radius: 5px;
-            display: inline-block;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
         }
-        .selected {
-            background-color: #4CAF50;
+        .keyword-button:hover {
+            background-color: #ffb3b5;
             color: white;
         }
-        #recommendations-content {
+
+        .keyword-button.selected {
+            background-color: #ff5a5f;
+            color: white;
+        }
+
+        .actions {
             margin-top: 20px;
+        }
+
+        .recommend-button, .reset-button {
+            font-family: 'HSSaemaul-Regular';
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .recommend-button {
+            background-color: #ff5a5f;
+            color: white;
+        }
+
+        .reset-button {
+            background-color: #e0e0e0;
+            color: black;
+        }
+
+        .recommend-button:hover, .reset-button:hover {
+            background-color: #d9534f;
+            color: white;
+        }
+        .recommendation-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        overflow: hidden;
+        background-color: #fff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+    }
+
+    .recommendation-image {
+        width: 180px;
+        height: 120px;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-right: 20px;
+    }
+
+    .recommendation-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .recommendation-info {
+        flex: 1;
+        padding-left: 15px;
+        text-indent: 10px;
+    }
+
+    .recommendation-info h4 {
+        font-family: 'TheJamsil5Bold';
+        font-size: 18px;
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+
+    .recommendation-info p {
+        margin: 5px 0;
+        font-family: 'HSSaemaul-Regular', Arial, sans-serif;
+        font-size: 14px;
+    }
+
+    .hashtag {
+        display: inline-block;
+        background-color: #f0f0f0;
+        color: #555;
+        padding: 5px 10px;
+        margin: 20px 20px 0 0;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+        .results {
+            margin-top: 20px;
+        }
+        
+        #backgroundSlider {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 1;
+            transition: opacity 1s;
+            background-size: cover;
+            background-position: center;
         }
     </style>
 </head>
 <body>
+    <div id="backgroundSlider"></div>
     <div class="header">
         <a href="/" class="logo">&ensp;&nbsp;위고부천</a>
     </div>
-
-    <h1>AI 기반 부천 관광지 추천</h1>
     <div class="container">
-        <h2>관심 있는 카테고리를 선택해주세요</h2>
-        <div id="categoryContainer"></div>
+        <h1>AI 기반 부천 관광지 추천</h1>
+        <p style="font-family:'TheJamsil5Bold';">관심 있는 키워드를 선택해주세요</p>
         
-        <button onclick="getRecommendations()">추천받기</button>
-        <button onclick="resetSelections()">초기화</button>
-
-        <div id="recommendations-content">
-            <h2>추천된 관광지</h2>
-            <!-- 추천 결과가 여기에 표시됩니다 -->
+        <div class="keywords"> 
+            <button class="keyword-button" onclick="toggleSelection(this)">가을</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">공원</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">공연</button>
+            <button class="keyword-button" onclick="toggleSelection(this)">관람</button>
+            <button class="keyword-button" onclick="toggleSelection(this)">관측</button>
+            <button class="keyword-button" onclick="toggleSelection(this)">구경</button>
+            <button class="keyword-button" onclick="toggleSelection(this)">규모</button>
+            <button class="keyword-button" onclick="toggleSelection(this)">교육</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">나들이</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">놀이</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">데이트</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">도서관</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">동물</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">먹이</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">문화</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">물고기</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">만화</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">박물관</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">산책</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">사진</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">아이</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">예술</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">전시</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">축제</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">카페</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">로봇</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">체험</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">자연</button> 
+            <button class="keyword-button" onclick="toggleSelection(this)">음향</button> 
+        </div>
+        
+        <div class="actions">
+            <button class="recommend-button" onclick="getRecommendations()">추천받기</button>
+            <button class="reset-button" onclick="resetSelection()">초기화</button>
+            <button class="recommend-button" onclick="redirectToMap()">AI 경로 추천 받기</button>
+        </div>
+        
+        <div class="results" id="results">
+            <h3 style="font-family:'TheJamsil5Bold';">추천된 관광지</h3>
+            <div id="recommendation-list"></div>
         </div>
     </div>
 
-    <script>
-        // 카테고리 목록 예시
-        const categories = ["가을", "걷기", "공연", "공원", "과학관", "관람", "관측", "교육", "구경", "규모", "나들이", "놀이터", "도서관", "동물", "로봇", "마을", "만화", "먹이", "문화", "물고기"];
+<script>
+    function goToResults(category) {
+        window.location.href = `/result?category=${encodeURIComponent(category)}`;
+    }
 
-        // 선택된 카테고리를 저장하는 배열
-        let selectedCategories = [];
+    const images = {
+    "부천아트센터": "{{ url_for('static', filename='image/부천아트센터.png') }}",
+    "부천아트센터2": "{{ url_for('static', filename='image/부천아트센터2.jpg') }}",
+    "부천자연생태공원": "{{ url_for('static', filename='image/부천자연생태공원.jpg') }}",
+    "부천천문과학관": "{{ url_for('static', filename='image/부천천문과학관.jpg') }}",
+    "부천한옥체험마을": "{{ url_for('static', filename='image/부천한옥체험마을.JPG') }}",
+    "부천천문과학관2": "{{ url_for('static', filename='image/부천천문과학관2.jpg') }}",
+    "상동호수공원": "{{ url_for('static', filename='image/상동호수공원.jpg') }}",
+    "원미산 진달래동산": "{{ url_for('static', filename='image/원미산 진달래동산.jpg') }}",
+    "플레이아쿠아리움부천": "{{ url_for('static', filename='image/플레이아쿠아리움부천.png') }}",
+    "한국만화박물관": "{{ url_for('static', filename='image/한국만화박물관.JPG') }}",
+    "한국만화박물관2": "{{ url_for('static', filename='image/한국만화박물관2.jpg') }}",
+    "고강선사유적공원": "{{ url_for('static', filename='image/고강선사유적공원.jpg') }}",
+    "나눔농장": "{{ url_for('static', filename='image/나눔농장.JPG') }}",
+    "도당수목원": "{{ url_for('static', filename='image/도당수목원.jpg') }}",
+    "레노부르크뮤지엄": "{{ url_for('static', filename='image/레노부르크뮤지엄.jpeg') }}",
+    "레노부르크뮤지엄2": "{{ url_for('static', filename='image/레노부르크뮤지엄.jpg') }}",
+    "백만송이장미원": "{{ url_for('static', filename='image/백만송이장미원.jpg') }}",
+    "볼베어파크": "{{ url_for('static', filename='image/볼베어파크.jpeg') }}",
+    "부천로보파크": "{{ url_for('static', filename='image/부천로보파크.jpg') }}",
+    "부천무릉도원수목원": "{{ url_for('static', filename='image/부천무릉도원수목원.jpg') }}",
+    "부천시립박물관": "{{ url_for('static', filename='image/부천시립박물관.jpg') }}",
+    "부천아트벙커": "{{ url_for('static', filename='image/부천아트벙커B39.jpg') }}"
+    };
+    let currentIndex = 0;
+    const backgroundSlider = document.getElementById('backgroundSlider');
 
-        // 카테고리 버튼 생성
-        const categoryContainer = document.getElementById("categoryContainer");
-        categories.forEach(category => {
-            const button = document.createElement("div");
-            button.className = "category-item";
-            button.innerText = category;
-            button.onclick = () => toggleCategory(category, button);
-            categoryContainer.appendChild(button);
-        });
+    function changeBackground() {
+            backgroundSlider.style.opacity = 0;
 
-        // 카테고리 선택 토글 함수
-        function toggleCategory(category, button) {
-            if (button.classList.contains('selected')) {
-                button.classList.remove('selected');
-                selectedCategories = selectedCategories.filter(c => c !== category);
-            } else {
-                button.classList.add('selected');
-                selectedCategories.push(category);
+            setTimeout(() => {
+                backgroundSlider.style.backgroundImage = `url(${images[currentIndex]})`;
+                backgroundSlider.style.opacity = 1;
+                currentIndex = (currentIndex + 1) % Object.values(images).length;
+            }, 1000); // Delay for fade-in effect
+        }
+
+        setInterval(changeBackground, 10000);
+        changeBackground();
+
+        // Define recommended spots globally
+    let recommendedSpots = [];
+
+    function getRecommendations() {
+        fetch('/recommend', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ interests: getSelectedKeywords() })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.length === 0) {
+                alert("추천된 관광지가 없습니다. 키워드를 다시 선택해주세요.");
+                return;
             }
-        }
 
-        // 추천 결과 요청
-        function getRecommendations() {
-            const formData = new FormData();
-            selectedCategories.forEach(category => formData.append('interests', category));
+            // Update global variable with recommended spot names
+            recommendedSpots = data.map(spot => spot.name);
 
-            // 로컬 호스트 주소 및 포트를 현재 설정에 맞게 조정
-            fetch('http://127.0.0.1:5000/recommend', {  // Flask 기본 포트가 5000일 경우
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                const recDiv = document.getElementById('recommendations-content');
-                recDiv.innerHTML = '<h2>추천 관광지</h2>';
-                data.forEach((rec, index) => {
-                    recDiv.innerHTML += `
-                        <p><strong>${index + 1}. ${rec.name}</strong> (${rec.category}) - 평점: ${rec.rating}<br>
-                        특징: ${rec.features.join(', ')}<br>
-                        위치: 위도 ${rec.location[0]}, 경도 ${rec.location[1]}<br>
-                        대표 리뷰: ${rec.reviews.join(', ')}</p>`;
-                });
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                document.getElementById('recommendations-content').innerText = "추천 결과를 불러올 수 없습니다.";
+            // Display recommended spots in the current page
+            const recommendationList = document.getElementById('recommendation-list');
+            recommendationList.innerHTML = '';
+
+            data.forEach((spot, index) => {
+                const imageUrl = images[spot.name] || 'default.jpg';
+                const spotDiv = document.createElement('div');
+                spotDiv.className = 'recommendation-item';
+                spotDiv.innerHTML = `
+                    <img src="${imageUrl}" alt="${spot.name} 사진" style="width:150px; height:150px;">
+                    <div class="recommendation-info">
+                        <h4>${index + 1}. ${spot.name}</h4><br>
+                        <p>주소: ${spot.address || '주소 정보 없음'}</p><br>
+                        <p>평점: ⭐️${spot.rating}</p><br>
+                        <p>${spot.features.map(feature => `#${feature}`).join(' ')}</p>
+                    </div>
+                `;
+                recommendationList.appendChild(spotDiv);
             });
-        }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Redirect to ai_map.html with recommended spots
+    function redirectToMap() {
+        fetch('/ai_map', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ selectedSpots: recommendedSpots }) // Send the selected spot names
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.href = '/ai_map';
+            } else {
+                console.error("Failed to redirect to ai_map");
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
 
 
-        // 선택 초기화 및 추천 결과 지우기
-        function resetSelections() {
-            selectedCategories = [];  // 선택된 카테고리 초기화
-            document.querySelectorAll('.category-item').forEach(button => button.classList.remove('selected'));
-            document.getElementById('recommendations-content').innerHTML = '';  // 추천 결과 초기화
-        }
-    </script>
+    function toggleSelection(button) {
+        button.classList.toggle('selected');
+    }
+    function resetSelection() {
+        document.querySelectorAll('.keyword-button').forEach(button => button.classList.remove('selected'));
+        document.getElementById('recommendation-list').innerHTML = '';
+        recommendedSpots = []; // 추천된 관광지 목록 초기화
+    }
+
+    function getSelectedKeywords() {
+        return Array.from(document.querySelectorAll('.keyword-button.selected')).map(button => button.textContent);
+    }
+
+</script>
 </body>
 </html>
