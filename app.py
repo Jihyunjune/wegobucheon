@@ -18,7 +18,7 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 app = Flask(__name__)
-
+CORS(app, resources={r"/*": {"origins": "*"}})  # 모든 출처에 대해 CORS 허용
 # 네이버 API 키 설정
 client_id = '0uxifb6sxl'
 client_secret = 'h9VLdh7W1xOzIwf2RtUxXMH9X8b0Y779kytjgNaq'
